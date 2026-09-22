@@ -7,6 +7,10 @@ module morse_top (
 );
     wire btn_sync;
     wire tick_1ms;
+    wire rst = 1'b0;
+    wire sync_sig;
+    wire tick_sig;
+    wire [7:0] ascii_bus;
 
     synchronizer sync_inst (
         .sys_clk  (sys_clk),
@@ -27,7 +31,7 @@ module morse_top (
         .tick_1ms(tick_sig),
         .ascii_out(ascii_out)
     );
-
+    assign led = ascii_bus[3:0];
     assign ascii_out  = 8'h00;
     assign ready_flag = 1'b0;
     
