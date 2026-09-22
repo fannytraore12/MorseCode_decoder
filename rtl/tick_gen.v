@@ -6,6 +6,7 @@ module tick_gen (
     reg [16:0] count;
     always @(posedge sys_clk or negedge rst_n) begin
         if (!rst_n) begin
+        //if reset IS active (0), clear all registers
             count    <= 17'd0;
             tick_1ms <= 1'b0;
         end else if (count == 17'd99999) begin

@@ -1,25 +1,3 @@
-`timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 09/21/2026 08:40:23 PM
-// Design Name: 
-// Module Name: morse_top
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
-
-
 module morse_top (
     input  wire       sys_clk,
     input  wire       rst_n,
@@ -42,7 +20,15 @@ module morse_top (
         .rst_n    (rst_n),
         .tick_1ms (tick_1ms)
     );
+    morse_fsm fsm_inst (
+        .clk(clk),
+        .rst(rst),
+        .btn_sync(sync_sig),    
+        .tick_1ms(tick_sig),
+        .ascii_out(ascii_out)
+    );
 
     assign ascii_out  = 8'h00;
     assign ready_flag = 1'b0;
+    
 endmodule
