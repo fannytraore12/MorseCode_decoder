@@ -1,0 +1,17 @@
+# Vivado generated output
+.Xil/
+*.cache/
+*.hw/
+*.ip_user_files/
+*.runs/
+*.sim/
+*.sdk/
+*.gen/
+*.jou
+*.log
+*.str
+*.bit
+*.bin
+*.ltx
+*.wdb
+obj_dir/
