@@ -1,38 +1,40 @@
-module morse_top (
-    input  wire       sys_clk,
-    input  wire       rst_n,
-    input  wire       btn_in,
-    output wire [7:0] ascii_out,
-    output wire       ready_flag
+module synchronizer #(
+    parameter integer DEBOUNCE_MS = 20
+)(
+    input  wire sys_clk,
+    input  wire rst_n,       // active-low, async
+    input  wire btn_in,      // raw pin, active-high: idle=0, pressed=1
+    input  wire tick_1ms,
+    output reg  btn_sync     // debounced LEVEL: 1 while pressed, 0 while released
 );
-    wire btn_sync;
-    wire tick_1ms;
-    wire rst = 1'b0;
-    wire sync_sig;
-    wire tick_sig;
-    wire [7:0] ascii_bus;
+    localparam integer W = $clog2(DEBOUNCE_MS + 1);
 
-    synchronizer sync_inst (
-        .sys_clk  (sys_clk),
-        .rst_n    (rst_n),
-        .btn_in   (btn_in),
-        .btn_sync (btn_sync)
-    );
+    reg sync0, sync1;        // 2-stage metastability synchronizer
+    reg [W-1:0] cnt;
 
-    tick_gen tick_inst (
-        .sys_clk  (sys_clk),
-        .rst_n    (rst_n),
-        .tick_1ms (tick_1ms)
-    );
-    morse_fsm fsm_inst (
-        .clk(clk),
-        .rst(rst),
-        .btn_sync(sync_sig),    
-        .tick_1ms(tick_sig),
-        .ascii_out(ascii_out)
-    );
-    assign led = ascii_bus[3:0];
-    assign ascii_out  = 8'h00;
-    assign ready_flag = 1'b0;
-    
+    always @(posedge sys_clk or negedge rst_n) begin
+        if (!rst_n) begin
+            sync0    <= 1'b0;
+            sync1    <= 1'b0;
+            cnt      <= {W{1'b0}};
+            btn_sync <= 1'b0;
+        end
+        else begin
+            sync0 <= btn_in;
+            sync1 <= sync0;
+
+            if (tick_1ms) begin
+                if (sync1 == btn_sync) begin
+                    cnt <= {W{1'b0}};              // agrees with current output: no bounce in progress
+                end
+                else if (cnt == DEBOUNCE_MS - 1) begin
+                    cnt      <= {W{1'b0}};
+                    btn_sync <= sync1;              // disagreement held for DEBOUNCE_MS ticks: accept it
+                end
+                else begin
+                    cnt <= cnt + 1'b1;
+                end
+            end
+        end
+    end
 endmodule

@@ -1,26 +1,45 @@
-module synchronizer (
-    input  wire sys_clk,
-    input  wire rst_n,
-    input  wire btn_in,
-    output reg  btn_sync
+module morse_top (
+    input  wire       sys_clk,
+    input  wire       btn_rst,     // BTN0, active-high: idle=0, pressed=1
+    input  wire       btn_in,
+    output wire [7:0] ascii_out,
+    output wire       ready_flag
 );
-    reg sync0;// state 1 d flip-flop catching asynch btn_sync
-    reg sync1; //stage 2 d flipflop registering a stable logic level with clk
-    reg sync1_d;// delay flip flop
-    always @(posedge sys_clk or negedge rst_n) begin
-    //If reset is active (0), clear the registers
-        if(!rst_n)begin
-            sync0 <= 1'b0;
-            sync1 <=1'b0;
-            sync1_d <= 1'b0;
-            btn_sync <= 1'b0;
-        end 
-        else begin
-        //otherwise (reset is NOT active), run as normal clock-edge shifting
-            sync0 <= btn_in;
-            sync1 <=sync0;
-            sync1_d <= sync1;
-            btn_sync <= (sync1 && !sync1_d);
-        end
-    end
+    wire       btn_sync;
+    wire       tick_1ms;
+    wire       rst_n = ~btn_rst;   // synchronizer/tick_gen want active-low async reset
+    wire       rst   =  btn_rst;   // morse_fsm wants active-high reset - same raw signal, no double inversion
+    wire [7:0] raw_code;
+    wire       char_ready;
+
+    synchronizer sync_inst (
+        .sys_clk  (sys_clk),
+        .rst_n    (rst_n),
+        .btn_in   (btn_in),
+        .tick_1ms (tick_1ms),
+        .btn_sync (btn_sync)
+    );
+
+    tick_gen tick_inst (
+        .sys_clk  (sys_clk),
+        .rst_n    (rst_n),
+        .tick_1ms (tick_1ms)
+    );
+
+    morse_fsm fsm_inst (
+        .clk        (sys_clk),
+        .rst        (rst),
+        .btn_sync   (btn_sync),
+        .tick_1ms   (tick_1ms),
+        .raw_code   (raw_code),
+        .char_ready (char_ready)
+    );
+
+    morse_decoder dec_inst (
+        .raw_code      (raw_code),
+        .char_ready_in (char_ready),
+        .ascii_out     (ascii_out),
+        .ready_flag    (ready_flag)
+    );
+
 endmodule
